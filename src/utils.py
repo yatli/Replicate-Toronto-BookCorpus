@@ -7,6 +7,7 @@ import time
 import unicodedata
 from pathlib import Path
 from typing import Dict, List
+from collections import namedtuple
 
 from blingfire import text_to_sentences
 import requests
@@ -56,12 +57,16 @@ def get_proxies():
     response = requests.get(url)
     parser = fromstring(response.text)
     proxies = set()
-    for i in parser.xpath('//tbody/tr')[:10]:
+    for i in parser.xpath('//tbody/tr'):
         if i.xpath('.//td[7][contains(text(),"yes")]'):
             # Grabbing IP and corresponding PORT
             proxy = ":".join([i.xpath('.//td[1]/text()')[0], i.xpath('.//td[2]/text()')[0]])
-            proxies.add(proxy)
+            proxies.add(f'http://{proxy}')
     return proxies
+
+class fake_rsp:
+    def __init__(self):
+        self.status_code=0
 
 
 def get(url: str, session: Session = None, headers: Dict[str, str] = None, proxy: str = None, cookies: Dict[str, str] = None,
@@ -71,6 +76,8 @@ def get(url: str, session: Session = None, headers: Dict[str, str] = None, proxy
             proxies = {"http": proxy, "https": proxy}
         else:
             proxies = None
+
+        timeout = (2.0, 10)
 
         # make the request and get the response
         if session is None:
@@ -86,9 +93,14 @@ def get(url: str, session: Session = None, headers: Dict[str, str] = None, proxy
 
         # return the response
         return r
-    except (ConnectionError, Timeout, RequestException):
+    except (Timeout):
         # sleep
         time.sleep(RETRY_SLEEP)
+        return fake_rsp()
+    except (ConnectionError, RequestException):
+        # sleep
+        time.sleep(RETRY_SLEEP)
+        return fake_rsp()
 
 
 def get_headers(file: Path) -> List[Dict[str, str]]:
