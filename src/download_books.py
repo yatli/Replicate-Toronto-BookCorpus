@@ -22,7 +22,7 @@ def main():
     mkdirs(data_dir, dump_dir)
 
     # load book_download_urls
-    book_download_urls = read(root_dir / 'book_download_urls.txt').splitlines()
+    book_download_urls = read(root_dir / 'book_download_urls.txt', 'r').splitlines()
 
     # remove any books that have already been downloaded
     book_download_urls = [url for url in book_download_urls if not (data_dir / f'{get_book_id(url)}.txt').exists()]
